@@ -2,7 +2,10 @@ import puppeteer from "puppeteer";
 import ky from 'ky';
 
 async function createOrLoginAccount(email: string) {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
     try {
         const page = await browser.newPage();
         // set navigation timeout to 60 seconds
@@ -54,7 +57,10 @@ async function createOrLoginAccount(email: string) {
 }
 
 async function verifyAccount(url: string) {
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
     try {
         const page = await browser.newPage();
         // set navigation timeout to 60 seconds
