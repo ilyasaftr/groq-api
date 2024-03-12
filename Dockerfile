@@ -11,4 +11,4 @@ COPY drizzle.config.ts .
 # Install dependencies
 RUN bun install --frozen-lockfile
 COPY src ./src
-CMD ["bun run start"]
+CMD ["bun", "run", "start"]
