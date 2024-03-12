@@ -1,65 +1,47 @@
-import { Hono } from 'hono'
-import { updateData, readData} from './utils/groq-token'
+import dbMigrate from "./db/migrate";
+import dbConnection from "./db/db";
+import { updateData } from "./utils/groq-token";
+import { apiKeys } from "./db/schema";
 
-const app = new Hono()
+async function getKey(db: any) {
+  // Create account
+  try {
+    const response = await updateData();
 
-// Background task run await updateData(); every 14 minutes
-updateData();
-setInterval(async () => {
-  await updateData();
-}, 14 * 60 * 1000);
+    if (!response.status) {
+      console.log(`Error: ${response.message}`);
+      return;
+    }
 
-app.get('/', async (c) => {
-  return c.text('Hello Hono!')
-})
+    const email = response?.data?.email;
+    const organization = response?.data?.organization;
+    const token = response?.data?.token;
 
-app.post('/chat', async (c) => {
-  const body = await c.req.json()
+    // Save to database
+    const data = {
+      email: email,
+      organizationId: organization,
+      token: token
+    };
 
-  if (body['messages'] === undefined) {
-    return c.json({
-      status: false,
-      message: 'No chat found'
-    })
+    await db.insert(apiKeys).values(data);
+    console.log(`New key saved for ${email}`);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    console.log('Getting new key in 1 minutes');
+    setTimeout(getKey, (60 * 1000));
   }
+}
 
-  const messages = body['messages'];
+(async () => {
+  // Run database migration
+  await dbMigrate();
 
-  const payload = {
-    "model": "mixtral-8x7b-32768",
-    "messages": messages,
-    "temperature": 0.2,
-    "max_tokens": 2048,
-    "top_p": 0.8,
-    "seed": 10,
-    "stream": false
-  };
+  // Start database connection
+  const db = await dbConnection();
 
-  const responseToken = await readData();
+  // Get new key
+  await getKey(db);
 
-  const url = 'https://api.groq.com/openai/v1/chat/completions';
-  const headers = {
-    'Authorization': 'Bearer ' + responseToken.token,
-    'Groq-App': 'chat',
-    'Groq-Organization': responseToken.organization,
-    'Content-Type': 'application/json'
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-    headers,
-  });
-
-  if (!response.ok) {
-    c.json({
-      status: false,
-      message: response.statusText
-    });
-  }
-
-  const responseBody = await response.json();
-  return c.json(responseBody);
-})
-
-export default app
+})();

@@ -1,22 +1,19 @@
-async function createEmail() {
-    const url = 'https://api.internal.temp-mail.io/api/v3/email/new';
+import * as cheerio from 'cheerio';
+
+async function checkEmail(email: string, domain: string) {
+    const url = `https://generator.email/${domain}/${email}`;
     const headers = {
-        'Host': 'api.internal.temp-mail.io',
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Host': 'generator.email',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
         'Connection': 'keep-alive',
+        'cookie': `surl=${domain}%2F${email}`,
         'Accept-Encoding': 'gzip, deflate, br',
-        'User-Agent': 'Temp Mail/30 CFNetwork/1492.0.1 Darwin/23.3.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
         'Accept-Language': 'en-us',
     }
-    const body = {
-        "min_name_length": 0,
-        "max_name_length": 0
-    };
 
     const response = await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(body),
+        method: 'GET',
         headers,
     });
 
@@ -27,78 +24,21 @@ async function createEmail() {
         };
     }
 
-    const responseBody = await response.json();
+    const responseBody = await response.text();
+    const $ = cheerio.load(responseBody);
+    const urlLink = $("#email-table > div.e7m.row.list-group-item > div.e7m.col-md-12.ma1 > div.e7m.mess_bodiyy > table > tbody > tr > td > a").attr('href');
+
+    if (!urlLink) {
+        return {
+            status: false,
+            message: 'No link found'
+        };
+    }
 
     return {
         status: true,
-        data: responseBody
+        data: urlLink
     };
 }
 
-async function checkEmail(email: string) {
-    try {
-        const url = `https://api.internal.temp-mail.io/api/v3/email/${email}/messages`;
-        const headers = {
-            'Host': 'api.internal.temp-mail.io',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Connection': 'keep-alive',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'User-Agent': 'Temp Mail/30 CFNetwork/1492.0.1 Darwin/23.3.0',
-            'Accept-Language': 'en-us',
-        }
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers,
-        });
-
-        if (!response.ok) {
-            return {
-                status: false,
-                message: response.statusText
-            };
-        }
-
-        const responseBody = await response.json();
-
-        if (responseBody.length === 0) {
-            return {
-                status: false,
-                message: 'No email found'
-            };
-        }
-
-        const emailMessage = responseBody.find((email: any) => email.subject === 'Your account creation request for Groq');
-
-        if (!emailMessage) {
-            return {
-                status: false,
-                message: 'No email found'
-            };
-        }
-
-        const linkRegex = /(https:\/\/stytch\.com\/[^\s]+)/g;
-        const matches = emailMessage['body_text'].match(linkRegex);
-
-        if (!matches) {
-            return {
-                status: false,
-                message: 'No link found'
-            };
-        }
-
-        return {
-            status: true,
-            data: matches[0]
-        };
-    } catch (error) {
-        console.error(error);
-        return {
-            status: false,
-            message: 'An error occurred'
-        }
-    }
-}
-
-export { createEmail, checkEmail };
+export { checkEmail };

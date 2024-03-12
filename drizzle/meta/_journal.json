@@ -1,0 +1,20 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1710084650448,
+      "tag": "0000_sloppy_mandrill",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1710224198212,
+      "tag": "0001_narrow_sabra",
+      "breakpoints": true
+    }
+  ]
+}

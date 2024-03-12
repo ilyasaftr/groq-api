@@ -1,16 +1,14 @@
-import {checkEmail, createEmail} from "../vendor/temp-mail";
-import {createOrLoginAccount, profileMe, verifyAccount} from "./groq-auth";
+import { faker } from '@faker-js/faker';
+import { checkEmail } from "../vendor/temp-mail";
+import { createOrLoginAccount, verifyAccount } from "./groq-auth";
+
 
 async function updateData() {
     try {
-        const [responseEmail] = await Promise.all([createEmail()]);
-
-        if(!responseEmail['status']) {
-            console.log(`Error: ${responseEmail['message']}`);
-            return;
-        }
-
-        const email = responseEmail['data']['email'];
+        const randomNumber = Math.floor(Math.random() * 100) + 1;
+        const username = faker.internet.userName().toLowerCase() + randomNumber;
+        const domain = "algonion.com";
+        const email = `${username}@${domain}`
 
         console.log(`Email: ${email}`)
 
@@ -19,79 +17,65 @@ async function updateData() {
 
         if(!responseCreateAccount['status']) {
             console.log(`Error: ${responseCreateAccount['message']}`);
-            return;
+            return {
+                status: false,
+                message: responseCreateAccount['message']
+            }
         }
 
-        console.log('Waiting for email...')
-        await new Promise(resolve => setTimeout(resolve, (10 * 1000)));
-
-        const responseCheckEmail = await checkEmail(email);
+        let responseCheckEmail;
+        do {
+            responseCheckEmail = await checkEmail(username, domain);
+            console.log('Waiting for email...')
+        } while (responseCheckEmail['status'] != true);
 
         if(!responseCheckEmail['status']) {
             console.log(`Error: ${responseCheckEmail['message']}`);
-            return;
+            return {
+                status: false,
+                message: responseCheckEmail['message']
+            }
         }
 
         const link = responseCheckEmail['data'];
 
-        console.log(`Link: ${link}`)
+        if (!link) {
+            console.log(`Error: No link found`);
+            return {
+                status: false,
+                message: 'No link found'
+            }
+        }
+
+        console.log('Verifying account...')
 
         const responseVerifyAccount = await verifyAccount(link);
-        if(!responseVerifyAccount['status']) {
+
+        if (!responseVerifyAccount['status']) {
             console.log(`Error: ${responseVerifyAccount['message']}`);
-            return;
+            return {
+                status: false,
+                message: responseVerifyAccount['message']
+            }
         }
 
         console.log('Account verified')
 
-        const token = responseVerifyAccount?.data?.token;
-
-        if (!token) {
-            console.log('No token found');
-            return;
+        return {
+            status: true,
+            data: {
+                email: email,
+                organization: responseVerifyAccount?.data?.organization,
+                token: responseVerifyAccount?.data?.token
+            }
         }
-
-        console.log(`Token: ${token}`)
-
-        const profile = await profileMe(token);
-
-        if (!profile['status']) {
-            console.log(`Error: ${profile['message']}`);
-            return;
-        }
-
-        console.log('Profile found')
-
-        const organization = profile?.data?.organizations;
-
-        if (!organization) {
-            console.log('No organization found');
-            return;
-        }
-
-        console.log(`Organization: ${organization}`);
-
-        const updatedData = {
-            token: token,
-            organization: organization,
-        }
-
-        const directory = process.cwd();
-        await Bun.write(`${directory}/data.json`, JSON.stringify(updatedData, null, 2));
-        console.log(`Data updated`);
     } catch (error) {
         console.error(error)
+        return {
+            status: false,
+            message: 'An error occurred'
+        }
     }
 }
 
-async function readData() {
-    try {
-        const directory = process.cwd();
-        const readData = Bun.file(`${directory}/data.json`, { type: "application/json" });
-        return readData.json();
-    } catch (error) {
-        console.error(error)
-    }
-}
-
-export { updateData, readData }
+export { updateData }
