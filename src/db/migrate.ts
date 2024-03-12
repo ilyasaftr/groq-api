@@ -14,7 +14,7 @@ async function dbMigrate() {
 
     try {
         console.log("Migrating database...");
-        await migrate(db, { migrationsFolder: "drizzle" });
+        await migrate(db, { migrationsFolder: `${process.cwd()}/drizzle` });
         console.log("Database migration complete");
     } catch (error) {
         console.error("Database migration failed", error);
