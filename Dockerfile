@@ -10,4 +10,4 @@ COPY package.json .
 # Install dependencies
 RUN bun install --frozen-lockfile
 COPY src ./src
-CMD ["bun run generate && bun run src/index.ts"]
+CMD ["bun run start"]
