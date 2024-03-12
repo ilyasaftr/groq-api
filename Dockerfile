@@ -6,6 +6,7 @@ WORKDIR /app
 RUN npm install -g bun
 COPY bun.lockb .
 COPY package.json .
+COPY drizzle.config.ts .
 
 # Install dependencies
 RUN bun install --frozen-lockfile
