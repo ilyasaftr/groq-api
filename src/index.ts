@@ -30,7 +30,7 @@ async function getKey(db: any) {
     console.error(error);
   } finally {
     console.log('Getting new key in 1 minutes');
-    setTimeout(getKey, (60 * 1000));
+    setTimeout(() => getKey(db), 60 * 1000);
   }
 }
 
