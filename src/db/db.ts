@@ -1,5 +1,5 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
 async function dbConnection() {
     const connectionString = process.env.DATABASE_URL || "";
@@ -9,8 +9,11 @@ async function dbConnection() {
     }
 
     try {
-        const sql = postgres(connectionString);
-        return drizzle(sql);
+        const pool = new Pool({
+            connectionString: connectionString,
+        });
+
+        return drizzle(pool);
     } catch (error) {
         console.error("Database connection failed", error);
     }
